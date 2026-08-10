@@ -128,6 +128,26 @@ async def initialize_database(db_manager, config=None):
     );
     """
 
+    trivia_questions_table = """
+    CREATE TABLE IF NOT EXISTS trivia_questions (
+        question_date TEXT PRIMARY KEY,
+        question_text TEXT NOT NULL,
+        choices TEXT NOT NULL,
+        correct_index INTEGER NOT NULL
+    );
+    """
+
+    trivia_responses_table = """
+    CREATE TABLE IF NOT EXISTS trivia_responses (
+        username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+        question_date TEXT NOT NULL,
+        answer_index INTEGER NOT NULL,
+        correct BOOLEAN NOT NULL,
+        answered_at TEXT NOT NULL,
+        PRIMARY KEY (username, question_date)
+    );
+    """
+
     # all tables to be initialized
     tables = [
         user_table,
@@ -142,6 +162,8 @@ async def initialize_database(db_manager, config=None):
         mc_adverts_table,
         mc_passwd_cache_table,
         mc_chat_contacts_table,
+        trivia_questions_table,
+        trivia_responses_table,
     ]
 
     for sql in tables:
