@@ -14,6 +14,7 @@ class TriviaCommand(BaseCommand):
     permission_level = PermissionLevel.USER
     short_text = "Daily trivia"
     help_text = "Play today's trivia question. One question per day, shared by everyone."
+    hidden = True  # discovered via P (Games), not the main H menu
 
     async def run(self, context):
         from citadel.workflows.registry import get as get_workflow
