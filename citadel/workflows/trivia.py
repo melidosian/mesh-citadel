@@ -114,18 +114,16 @@ class TriviaWorkflow(Workflow):
             context, question_date)
 
         already = await context.db.execute(
-            "SELECT correct FROM trivia_responses WHERE username = ? AND question_date = ?",
+            "SELECT 1 FROM trivia_responses WHERE username = ? AND question_date = ?",
             (username, question_date)
         )
         if already:
             context.session_mgr.clear_workflow(context.session_id)
-            correct = already[0][0]
-            result_line = ("Correct!" if correct
-                          else f"Incorrect. The answer was {choices[correct_index]}.")
             reveal = await self._yesterday_reveal(context, question_date)
             return ToUser(
                 session_id=context.session_id,
-                text=f"You've already played today's trivia.\n{result_line}\n\n{reveal}"
+                text=("You've already played today's trivia. Check back "
+                      f"tomorrow to see how you did!\n\n{reveal}")
             )
 
         data = {
@@ -162,8 +160,9 @@ class TriviaWorkflow(Workflow):
 
             answer_index = ord(answer_letter) - ord("A")
             correct_index = data["correct_index"]
-            choices = data["choices"]
             question_date = data["question_date"]
+            # Graded and stored now, but deliberately not revealed until
+            # tomorrow's reveal -- see _yesterday_reveal().
             correct = (answer_index == correct_index)
 
             state = context.session_mgr.get_session_state(context.session_id)
@@ -178,12 +177,11 @@ class TriviaWorkflow(Workflow):
             )
             context.session_mgr.clear_workflow(context.session_id)
 
-            result_line = ("Correct!" if correct
-                          else f"Incorrect. The answer was {choices[correct_index]}.")
             reveal = await self._yesterday_reveal(context, question_date)
             return ToUser(
                 session_id=context.session_id,
-                text=f"{result_line}\n\n{reveal}"
+                text=("Your answer is locked in! Check back tomorrow to "
+                      f"see if you got it right.\n\n{reveal}")
             )
 
         return ToUser(
