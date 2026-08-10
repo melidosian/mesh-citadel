@@ -97,6 +97,10 @@ transport:
           host: "mqtt.meshmapper.net"
           port: 443
           audience: "mqtt.meshmapper.net"
+    bot_channel:                        # restart required to pick up changes
+      enabled: true
+      index: 3                          # device channel slot -- pick one not already in use
+      name: "#bot"
   cli:
     socket: "/tmp/mesh-citadel-cli.sock"
 

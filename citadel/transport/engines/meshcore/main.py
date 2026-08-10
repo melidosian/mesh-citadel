@@ -19,6 +19,7 @@ from citadel.transport.engines.meshcore.util import MessageDeduplicator, AdvertS
 from citadel.transport.parser import TextParser
 from citadel.transport.engines.meshcore.contacts import ContactManager
 from citadel.transport.engines.meshcore.mqtt_publisher import MqttPublisher
+from citadel.transport.engines.meshcore.bot_channel import BotChannelHandler
 from citadel.workflows.base import WorkflowState, WorkflowContext
 from citadel.workflows import registry as workflow_registry
 
@@ -48,6 +49,7 @@ class MeshCoreTransportEngine:
         self.meshcore = None
         self.contact_manager = None
         self.mqtt_publisher = None
+        self.bot_channel = None
 
         # Process lifecycle
         self._running = False
@@ -114,6 +116,10 @@ class MeshCoreTransportEngine:
                 self.config, self.meshcore, self._create_monitored_task,
                 self.command_lock)
             await self.mqtt_publisher.start()
+
+            # Initialize bot channel listener (e.g. #bot ping/pong)
+            self.bot_channel = BotChannelHandler(self.meshcore, self.config)
+            await self.bot_channel.start()
 
             # Set up event handlers and session notifications
             await self._register_event_handlers()
@@ -342,6 +348,12 @@ class MeshCoreTransportEngine:
             self.subs.append(self.meshcore.subscribe(
                 EventType.RX_LOG_DATA,
                 self.safe_handler(self.mqtt_publisher.handle_rx_log_data)
+            ))
+
+            # Bot channel messages - delegated to bot channel handler
+            self.subs.append(self.meshcore.subscribe(
+                EventType.CHANNEL_MSG_RECV,
+                self.safe_handler(self.bot_channel.handle_channel_message)
             ))
 
             task = await self.meshcore.start_auto_message_fetching()
