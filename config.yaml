@@ -38,7 +38,7 @@ bbs:
   3. No illegal content\n
   4. This is a welcoming, friendly community; respect all other members\n
   5. Sysop/aide decisions are final\n"
-  welcome_message: "Tae's BBS, 1st Citadel on the mesh. Log in, or type 'new' to register"
+  welcome_message: "Welcome to East Troy BBS. Enter your username or type 'new' to register."
 
 
 auth:
