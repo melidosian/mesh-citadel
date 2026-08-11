@@ -67,7 +67,8 @@ class BotChannelHandler:
         log.debug(f"Bot channel: received event, configured_indices={list(self.channel_indices)}, payload={data}")
 
         channel_idx = data.get("channel_idx")
-        if channel_idx not in self.channel_indices:
+        channel_name = self.channel_indices.get(channel_idx)
+        if channel_name is None:
             return
 
         text = (data.get("text") or "").strip()
@@ -82,6 +83,8 @@ class BotChannelHandler:
         if text == "ping":
             reply = self._pong_reply(data)
             await self.meshcore.commands.send_chan_msg(channel_idx, reply)
+        elif text == "test" and channel_name == "#test":
+            await self.meshcore.commands.send_chan_msg(channel_idx, "Received in East Troy")
 
     @staticmethod
     def _pong_reply(data) -> str:
