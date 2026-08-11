@@ -27,6 +27,7 @@ ACTION_REQUIREMENTS = {
     "ask_ai": PermissionInfo(level=PermissionLevel.USER, description="ask the AI"),
     "games": PermissionInfo(level=PermissionLevel.USER, description="list games"),
     "trivia": PermissionInfo(level=PermissionLevel.USER, description="play trivia"),
+    "tic_tac_toe": PermissionInfo(level=PermissionLevel.USER, description="play tic-tac-toe"),
     "block_user": PermissionInfo(level=PermissionLevel.TWIT, description="block users"),
     "cancel": PermissionInfo(level=PermissionLevel.TWIT,
                              description="cancel a workflow"),

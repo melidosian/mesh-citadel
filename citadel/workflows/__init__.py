@@ -7,6 +7,7 @@ from citadel.workflows import validate_users
 from citadel.workflows import enter_message
 from citadel.workflows import create_room
 from citadel.workflows import trivia
+from citadel.workflows import tic_tac_toe
 
 # any new workflows must be imported above to be registered
 

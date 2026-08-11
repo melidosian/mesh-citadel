@@ -22,5 +22,5 @@ class GamesCommand(BaseCommand):
     async def run(self, context):
         return ToUser(
             session_id=context.session_id,
-            text="Games:\nT - Trivia\n\nSend the letter to play."
+            text="Games:\nT - Trivia\nX - Tic-Tac-Toe\n\nSend the letter to play."
         )
