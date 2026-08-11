@@ -1,9 +1,9 @@
 # citadel/transport/engines/meshcore/bot_channel.py
-"""Listens on a configured MeshCore channel (e.g. "#bot") and replies to
-simple triggers. v1 is deliberately minimal: ping -> pong, proving the
-whole path (channel config on the radio, receiving CHANNEL_MSG_RECV,
-replying via send_chan_msg) before anything needing per-message logic
-gets built on top of it.
+"""Listens on one or more configured MeshCore channels (e.g. "#bot",
+"#test") and replies to simple triggers. v1 is deliberately minimal:
+ping -> pong, proving the whole path (channel config on the radio,
+receiving CHANNEL_MSG_RECV, replying via send_chan_msg) before anything
+needing per-message logic gets built on top of it.
 
 Channel messages carry no sender-identity field at the protocol level
 (unlike direct messages) -- just channel_idx, text, and a timestamp --
@@ -20,22 +20,29 @@ log = logging.getLogger(__name__)
 class BotChannelHandler:
     def __init__(self, meshcore, config):
         self.meshcore = meshcore
-        self.bot_config = config.transport.get("meshcore", {}).get("bot_channel", {})
-        self.channel_index = None
+        self.channel_configs = config.transport.get("meshcore", {}).get("bot_channels", [])
+        # index -> name, for whichever channels were configured successfully
+        self.channel_indices = {}
 
     async def start(self):
         if not self.meshcore:
             log.warning("BotChannelHandler: no MeshCore connection, skipping")
             return
 
-        if not self.bot_config.get("enabled", False):
-            log.info("Bot channel disabled in config")
+        for channel_config in self.channel_configs:
+            await self._start_channel(channel_config)
+
+        if not self.channel_indices:
+            log.info("Bot channel: no channels configured/enabled")
+
+    async def _start_channel(self, channel_config):
+        if not channel_config.get("enabled", False):
             return
 
-        index = self.bot_config.get("index")
-        name = self.bot_config.get("name", "#bot")
+        index = channel_config.get("index")
+        name = channel_config.get("name", "#bot")
         if index is None:
-            log.error("BotChannelHandler: no channel index configured, skipping")
+            log.error(f"Bot channel: no index configured for '{name}', skipping")
             return
 
         existing = await self.meshcore.commands.get_channel(index)
@@ -52,17 +59,15 @@ class BotChannelHandler:
             log.error(f"Bot channel: failed to configure '{name}' at slot {index}: {result.payload}")
             return
 
-        self.channel_index = index
+        self.channel_indices[index] = name
         log.info(f"Bot channel '{name}' configured at slot {index}")
 
     async def handle_channel_message(self, event):
         data = event.payload or {}
-        log.debug(f"Bot channel: received event, configured_index={self.channel_index}, payload={data}")
+        log.debug(f"Bot channel: received event, configured_indices={list(self.channel_indices)}, payload={data}")
 
-        if self.channel_index is None:
-            return
-
-        if data.get("channel_idx") != self.channel_index:
+        channel_idx = data.get("channel_idx")
+        if channel_idx not in self.channel_indices:
             return
 
         text = (data.get("text") or "").strip()
@@ -76,7 +81,7 @@ class BotChannelHandler:
 
         if text == "ping":
             reply = self._pong_reply(data)
-            await self.meshcore.commands.send_chan_msg(self.channel_index, reply)
+            await self.meshcore.commands.send_chan_msg(channel_idx, reply)
 
     @staticmethod
     def _pong_reply(data) -> str:
