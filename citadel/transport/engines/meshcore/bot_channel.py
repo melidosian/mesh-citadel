@@ -71,20 +71,34 @@ class BotChannelHandler:
         if channel_name is None:
             return
 
-        text = (data.get("text") or "").strip()
+        raw_text = (data.get("text") or "").strip()
         # The MeshCore app prefixes channel messages with the sender's
         # display name ("Name: message"), since channel messages have no
-        # separate sender-identity field at the protocol level. Strip it
-        # before matching triggers.
-        if ": " in text:
-            _, _, text = text.partition(": ")
-        text = text.strip().lower()
+        # separate sender-identity field at the protocol level. Split it
+        # off both to match triggers against the actual message, and to
+        # @-mention the sender in our reply.
+        sender_name = None
+        message_text = raw_text
+        if ": " in raw_text:
+            sender_name, _, message_text = raw_text.partition(": ")
+        message_text = message_text.strip().lower()
 
-        if text == "ping":
+        if message_text == "ping":
             reply = self._pong_reply(data)
-            await self.meshcore.commands.send_chan_msg(channel_idx, reply)
-        elif text == "test" and channel_name == "#test":
-            await self.meshcore.commands.send_chan_msg(channel_idx, "Received in East Troy")
+            await self.meshcore.commands.send_chan_msg(
+                channel_idx, self._mention(sender_name, reply))
+        elif message_text == "test" and channel_name == "#test":
+            await self.meshcore.commands.send_chan_msg(
+                channel_idx, self._mention(sender_name, "Received in East Troy"))
+
+    @staticmethod
+    def _mention(sender_name, message: str) -> str:
+        """Prefix a reply with @[sender] -- falls back to a bare reply
+        if we couldn't parse a sender name off the incoming text (e.g.
+        a client that doesn't use the "Name: message" convention)."""
+        if sender_name:
+            return f"@[{sender_name}] {message}"
+        return message
 
     @staticmethod
     def _pong_reply(data) -> str:
