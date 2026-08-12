@@ -57,17 +57,29 @@ def _fallback_question(question_date: str):
     return FALLBACK_QUESTIONS[idx]
 
 
-async def _generate_question(config):
+async def _generate_question(config, recent_questions=None):
     """Returns (question_text, choices, correct_index) from the local
-    model, or None if generation/parsing failed for any reason."""
+    model, or None if generation/parsing failed for any reason.
+
+    recent_questions, if given, is a list of past question texts fed
+    back into the prompt so the (small, memoryless) model is steered
+    away from regenerating the same obvious fact -- it has no idea what
+    it asked yesterday otherwise."""
     ai_config = config.ai
+    prompt = TRIVIA_SYSTEM_PROMPT
+    if recent_questions:
+        avoid_list = "\n".join(f"- {q}" for q in recent_questions)
+        prompt += (
+            "\n\nDo not repeat any of these previously used questions, "
+            f"even reworded or about the same underlying fact:\n{avoid_list}"
+        )
     try:
         response = await asyncio.to_thread(
             requests.post,
             ai_config.get("ollama_url", "http://localhost:11434/api/generate"),
             json={
                 "model": ai_config.get("model", "llama3.2:3b"),
-                "prompt": TRIVIA_SYSTEM_PROMPT,
+                "prompt": prompt,
                 "stream": False,
                 "options": {"num_predict": 200},
             },
@@ -208,7 +220,14 @@ class TriviaWorkflow(Workflow):
             (question_date,)
         )
         if not existing:
-            generated = await _generate_question(context.config)
+            recent = await context.db.execute(
+                "SELECT question_text FROM trivia_questions "
+                "WHERE question_date < ? ORDER BY question_date DESC LIMIT 7",
+                (question_date,)
+            )
+            recent_questions = [row[0] for row in recent]
+
+            generated = await _generate_question(context.config, recent_questions)
             if generated:
                 question_text, choices, correct_index = generated
             else:
