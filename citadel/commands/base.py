@@ -49,6 +49,12 @@ class BaseCommand(ABC):
     category: CommandCategory = CommandCategory.COMMON
     permission_level: PermissionLevel = PermissionLevel.USER
 
+    # Excluded from the general H/? menu listing (still fully usable if
+    # sent directly, and still shown by "H <code>"). For commands meant
+    # to be discovered through another menu instead (e.g. games listed
+    # under P).
+    hidden: bool = False
+
     # Human‑readable description
     short_text: str = ""
     help_text: str = ""

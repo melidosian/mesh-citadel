@@ -16,6 +16,9 @@ from citadel.workflows.base import WorkflowContext
 # Import to register built-in commands
 import citadel.commands.builtins  # noqa: F401
 import citadel.commands.ai  # noqa: F401
+import citadel.commands.games  # noqa: F401
+import citadel.commands.trivia  # noqa: F401
+import citadel.commands.tic_tac_toe  # noqa: F401
 
 log = logging.getLogger(__name__)
 

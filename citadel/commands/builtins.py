@@ -512,6 +512,7 @@ class HelpCommand(BaseCommand):
         available_commands = []
         for cmd_class in all_commands.values():
             if (cmd_class.is_implemented() and
+                not cmd_class.hidden and
                 cmd_class.category == category and
                     is_allowed(cmd_class.name, user, room)):
                 available_commands.append(cmd_class)
